@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository currently contains the product definition for DevMD in `PRD.md`. Treat it as the source of truth for product scope, MVP requirements, and future architecture decisions.
+This repository contains the DevMD Next.js app and the product definition in `PRD.md`. Treat the PRD as the source of truth for product scope, MVP requirements, and architecture decisions.
 
 As implementation begins, use a conventional Next.js layout:
 
@@ -17,16 +17,11 @@ Keep generated output examples, prompts, and schema fixtures in a clearly named 
 
 ## Build, Test, and Development Commands
 
-No package scripts exist yet. After the app is scaffolded, document the actual commands here and keep them in sync with `package.json`.
-
-Expected examples:
-
 - `npm run dev` starts the local development server.
 - `npm run build` creates a production build.
 - `npm run lint` checks formatting and code quality.
-- `npm test` runs automated tests.
 
-Do not add command references unless they are available in the repository.
+No test script is configured yet. Add one before documenting `npm test`.
 
 ## Coding Style & Naming Conventions
 
