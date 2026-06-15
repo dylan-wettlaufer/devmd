@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -28,18 +28,41 @@ function applyTheme(theme: Theme) {
   document.documentElement.style.colorScheme = theme;
 }
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
+function subscribeToThemeChanges(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
 
-  useEffect(() => {
-    applyTheme(theme);
-    window.localStorage.setItem("theme", theme);
-  }, [theme]);
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener("devmd-theme-change", onStoreChange);
+  mediaQuery.addEventListener("change", onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener("devmd-theme-change", onStoreChange);
+    mediaQuery.removeEventListener("change", onStoreChange);
+  };
+}
+
+function getServerTheme(): Theme {
+  return "light";
+}
+
+export function ThemeToggle() {
+  const theme = useSyncExternalStore(
+    subscribeToThemeChanges,
+    getPreferredTheme,
+    getServerTheme
+  );
 
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
 
-    setTheme(nextTheme);
+    applyTheme(nextTheme);
+    window.localStorage.setItem("theme", nextTheme);
+    window.dispatchEvent(new Event("devmd-theme-change"));
   }
 
   return (

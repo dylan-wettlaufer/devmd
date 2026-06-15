@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -28,27 +29,23 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${dmSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var savedTheme = localStorage.getItem('theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var theme = savedTheme === 'light' || savedTheme === 'dark'
-                    ? savedTheme
-                    : prefersDark
-                      ? 'dark'
-                      : 'light';
-                  document.documentElement.classList.toggle('dark', theme === 'dark');
-                  document.documentElement.style.colorScheme = theme;
-                } catch (_) {}
-              })();
-            `,
-          }}
-        />
-      </head>
+      <Script id="theme-script" strategy="beforeInteractive">
+        {`
+          (function() {
+            try {
+              var savedTheme = localStorage.getItem('theme');
+              var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              var theme = savedTheme === 'light' || savedTheme === 'dark'
+                ? savedTheme
+                : prefersDark
+                  ? 'dark'
+                  : 'light';
+              document.documentElement.classList.toggle('dark', theme === 'dark');
+              document.documentElement.style.colorScheme = theme;
+            } catch (_) {}
+          })();
+        `}
+      </Script>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
