@@ -29,31 +29,25 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
 
   useEffect(() => {
-    const preferredTheme = getPreferredTheme();
-
-    setTheme(preferredTheme);
-    applyTheme(preferredTheme);
-    setMounted(true);
-  }, []);
+    applyTheme(theme);
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
 
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
 
     setTheme(nextTheme);
-    applyTheme(nextTheme);
-    window.localStorage.setItem("theme", nextTheme);
   }
 
   return (
     <Button
-      aria-label={mounted ? `Switch to ${theme === "dark" ? "light" : "dark"} mode` : "Toggle color mode"}
-      disabled={!mounted}
+      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       onClick={toggleTheme}
       size="icon"
+      suppressHydrationWarning
       type="button"
       variant="outline"
     >
