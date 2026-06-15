@@ -1,7 +1,8 @@
-import { ArrowRight, FileText, GitBranch, Sparkles } from "lucide-react";
+import { FileText, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RepoUrlForm } from "@/components/repo-url-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
@@ -10,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 const projectBrainSections = [
   "Overview",
@@ -49,23 +49,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                <div className="relative">
-                  <GitBranch
-                    className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <Input
-                    className="pl-8"
-                    placeholder="https://github.com/username/project"
-                    type="url"
-                  />
-                </div>
-                <Button size="lg">
-                  Generate
-                  <ArrowRight data-icon="inline-end" />
-                </Button>
-              </div>
+              <RepoUrlForm />
 
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
