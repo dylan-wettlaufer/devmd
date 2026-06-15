@@ -4,6 +4,7 @@ import { FormEvent, useId, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  ClipboardList,
   FileText,
   GitBranch,
   GitFork,
@@ -14,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { validateGithubRepoUrl } from "@/lib/github-url";
 
 type AnalyzeRepoSuccess = {
@@ -66,7 +68,43 @@ type AnalyzeRepoError = {
 
 type AnalyzeRepoResponse = AnalyzeRepoSuccess | AnalyzeRepoError;
 
+type ContextQuestionId = "goal" | "proudOf" | "challenge";
+
+type ContextAnswers = Record<ContextQuestionId, string>;
+
+type ContextQuestion = {
+  id: ContextQuestionId;
+  label: string;
+  helperText: string;
+  placeholder: string;
+};
+
 const filePreviewLimit = 8;
+const initialContextAnswers: ContextAnswers = {
+  goal: "",
+  proudOf: "",
+  challenge: "",
+};
+const contextQuestions: ContextQuestion[] = [
+  {
+    id: "goal",
+    label: "What was your goal with this project?",
+    helperText: "Focus on the user problem, learning goal, or portfolio purpose.",
+    placeholder: "Example: I built this to help users track job applications...",
+  },
+  {
+    id: "proudOf",
+    label: "What part are you most proud of?",
+    helperText: "Call out the feature, architecture choice, or detail you want highlighted.",
+    placeholder: "Example: The parser handles messy input and keeps the UI responsive...",
+  },
+  {
+    id: "challenge",
+    label: "Any challenge or tradeoff you want included?",
+    helperText: "Mention constraints, hard bugs, decisions, or compromises.",
+    placeholder: "Example: I chose a simpler data model to ship the MVP faster...",
+  },
+];
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
@@ -79,10 +117,13 @@ export function RepoUrlForm() {
   const [analysisResult, setAnalysisResult] = useState<AnalyzeRepoSuccess | null>(
     null
   );
+  const [contextAnswers, setContextAnswers] =
+    useState<ContextAnswers>(initialContextAnswers);
   const inputId = useId();
   const errorId = `${inputId}-error`;
   const descriptionId = `${inputId}-description`;
   const resultId = `${inputId}-result`;
+  const contextId = `${inputId}-context`;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,6 +133,7 @@ export function RepoUrlForm() {
     if (validationError) {
       setError(validationError);
       setAnalysisResult(null);
+      setContextAnswers(initialContextAnswers);
       return;
     }
 
@@ -119,18 +161,30 @@ export function RepoUrlForm() {
       }
 
       setAnalysisResult(responseBody);
+      setContextAnswers(initialContextAnswers);
     } catch {
       setError("Could not connect to the repo analyzer. Try again in a moment.");
       setAnalysisResult(null);
+      setContextAnswers(initialContextAnswers);
     } finally {
       setIsAnalyzing(false);
     }
+  }
+
+  function updateContextAnswer(id: ContextQuestionId, value: string) {
+    setContextAnswers((currentAnswers) => ({
+      ...currentAnswers,
+      [id]: value,
+    }));
   }
 
   const hasError = Boolean(error);
   const previewItems = analysisResult?.tree.items
     .filter((item) => item.type === "blob")
     .slice(0, filePreviewLimit);
+  const answeredContextCount = Object.values(contextAnswers).filter((answer) =>
+    answer.trim()
+  ).length;
 
   return (
     <div className="space-y-4">
@@ -308,6 +362,73 @@ export function RepoUrlForm() {
               </div>
             ) : null}
           </div>
+        </section>
+      ) : null}
+
+      {analysisResult ? (
+        <section
+          aria-labelledby={contextId}
+          className="space-y-4 rounded-lg border border-border bg-background/60 p-4"
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <ClipboardList
+                  className="size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <h3 className="text-base font-medium" id={contextId}>
+                  Add project context
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                These answers will help the Project Brain explain the work in your
+                voice during the generation step.
+              </p>
+            </div>
+            <Badge variant="outline">
+              {answeredContextCount} of {contextQuestions.length} answered
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            {contextQuestions.map((question) => {
+              const questionInputId = `${inputId}-${question.id}`;
+              const questionHelpId = `${questionInputId}-help`;
+
+              return (
+                <div className="space-y-1.5" key={question.id}>
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor={questionInputId}
+                  >
+                    {question.label}
+                  </label>
+                  <Textarea
+                    aria-describedby={questionHelpId}
+                    className="min-h-20 resize-y"
+                    id={questionInputId}
+                    onChange={(event) =>
+                      updateContextAnswer(question.id, event.target.value)
+                    }
+                    placeholder={question.placeholder}
+                    value={contextAnswers[question.id]}
+                  />
+                  <p
+                    className="text-xs text-muted-foreground"
+                    id={questionHelpId}
+                  >
+                    {question.helperText}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Next, these answers can be combined with selected key files before the
+            AI generation pipeline renders the Project Brain Markdown.
+          </p>
         </section>
       ) : null}
     </div>
