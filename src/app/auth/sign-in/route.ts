@@ -6,7 +6,7 @@ const githubOauthScopes = "read:user user:email";
 
 function getSafeNextPath(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
+    return "/repos";
   }
 
   return value;
