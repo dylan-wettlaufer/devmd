@@ -67,11 +67,11 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg">
-                Join the waitlist
+              <Button asChild size="lg">
+                <a href="/auth/sign-in">Sign in with GitHub</a>
               </Button>
-              <Button size="lg" variant="outline">
-                View product vision
+              <Button asChild size="lg" variant="outline">
+                <a href="#profile-documents">View profile structure</a>
               </Button>
             </div>
 
@@ -93,7 +93,7 @@ export default function Home() {
             </div>
           </div>
 
-          <Card className="bg-muted/20">
+          <Card className="bg-muted/20" id="profile-documents">
             <CardHeader>
               <CardTitle>Your profile, as Markdown</CardTitle>
               <CardDescription>
