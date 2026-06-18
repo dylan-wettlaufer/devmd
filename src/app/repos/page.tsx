@@ -1,13 +1,7 @@
-import {
-  CircleDot,
-  ExternalLink,
-  GitBranch,
-  GitFork,
-  RefreshCw,
-  Star,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { RepoSelectionList } from "@/components/repo-selection-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,85 +16,6 @@ import {
   type GithubRepositorySummary,
 } from "@/lib/github-repos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en").format(value);
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "No pushes yet";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function RepositoryCard({ repository }: { repository: GithubRepositorySummary }) {
-  return (
-    <Card className="bg-muted/20">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <CardTitle className="truncate">{repository.name}</CardTitle>
-            <CardDescription className="mt-1 truncate font-mono text-xs">
-              {repository.fullName}
-            </CardDescription>
-          </div>
-          {repository.language ? (
-            <Badge variant="outline">{repository.language}</Badge>
-          ) : null}
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="min-h-12 text-sm leading-6 text-muted-foreground">
-          {repository.description ?? "No repository description yet."}
-        </p>
-
-        <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <span className="flex items-center gap-2">
-            <Star className="size-4" aria-hidden="true" />
-            {formatNumber(repository.stars)} stars
-          </span>
-          <span className="flex items-center gap-2">
-            <GitFork className="size-4" aria-hidden="true" />
-            {formatNumber(repository.forks)} forks
-          </span>
-          <span className="flex items-center gap-2">
-            <CircleDot className="size-4" aria-hidden="true" />
-            {formatNumber(repository.openIssues)} issues
-          </span>
-          <span className="flex items-center gap-2">
-            <GitBranch className="size-4" aria-hidden="true" />
-            {repository.defaultBranch}
-          </span>
-        </div>
-
-        <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-xs text-muted-foreground">
-            Pushed {formatDate(repository.pushedAt)}
-          </p>
-          <div className="flex gap-2">
-            <Button asChild variant="outline">
-              <a href={repository.url} target="_blank" rel="noreferrer">
-                View
-                <ExternalLink className="size-4" aria-hidden="true" />
-              </a>
-            </Button>
-            <Button asChild>
-              <a href={`/dashboard?repo=${encodeURIComponent(repository.url)}`}>
-                Select repo
-              </a>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default async function ReposPage() {
   const supabase = await createSupabaseServerClient();
@@ -185,22 +100,7 @@ export default async function ReposPage() {
             </CardContent>
           </Card>
         ) : repositories.length > 0 ? (
-          <>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                Showing {repositories.length} selectable repositories.
-              </p>
-              <Badge variant="outline">Public, owned, active</Badge>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              {repositories.map((repository) => (
-                <RepositoryCard
-                  key={repository.id}
-                  repository={repository}
-                />
-              ))}
-            </div>
-          </>
+          <RepoSelectionList repositories={repositories} />
         ) : (
           <Card>
             <CardHeader>
