@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const maxSelectedRepositories = 3;
+
 const selectedRepositorySchema = z.object({
   id: z.number().int().positive(),
   name: z.string().min(1),
@@ -14,7 +16,7 @@ const selectedRepositorySchema = z.object({
 });
 
 const selectRepositoriesRequestSchema = z.object({
-  repositories: z.array(selectedRepositorySchema).min(1),
+  repositories: z.array(selectedRepositorySchema).min(1).max(maxSelectedRepositories),
 });
 
 export async function POST(request: Request) {
@@ -32,7 +34,10 @@ export async function POST(request: Request) {
   try {
     body = selectRepositoriesRequestSchema.parse(await request.json());
   } catch {
-    return NextResponse.json({ error: "Send at least one valid repository." }, { status: 400 });
+    return NextResponse.json(
+      { error: `Send between 1 and ${maxSelectedRepositories} valid repositories.` },
+      { status: 400 }
+    );
   }
 
   const queuedProjectIds: string[] = [];

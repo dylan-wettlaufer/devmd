@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/card";
 import type { GithubRepositorySummary } from "@/lib/github-repos";
 
+const maxSelectedRepositories = 3;
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
 }
@@ -63,6 +65,8 @@ export function RepoSelectionList({
     () => repositories.filter((repository) => selectedRepoIds.has(repository.id)),
     [repositories, selectedRepoIds]
   );
+  const hasReachedSelectionLimit =
+    selectedRepositories.length >= maxSelectedRepositories;
 
   function toggleRepository(repositoryId: number) {
     setSelectedRepoIds((currentRepoIds) => {
@@ -70,8 +74,10 @@ export function RepoSelectionList({
 
       if (nextRepoIds.has(repositoryId)) {
         nextRepoIds.delete(repositoryId);
-      } else {
+      } else if (nextRepoIds.size < maxSelectedRepositories) {
         nextRepoIds.add(repositoryId);
+      } else {
+        setSubmitError(`You can select up to ${maxSelectedRepositories} repos for now.`);
       }
 
       return nextRepoIds;
@@ -124,7 +130,8 @@ export function RepoSelectionList({
           </p>
           {selectedRepositories.length > 0 ? (
             <p className="mt-1 font-mono text-xs text-muted-foreground">
-              {getRepoCountLabel(selectedRepositories.length)}
+              {getRepoCountLabel(selectedRepositories.length)} /{" "}
+              {maxSelectedRepositories} max
             </p>
           ) : null}
         </div>
@@ -139,6 +146,7 @@ export function RepoSelectionList({
       <div className="grid gap-4 lg:grid-cols-2">
         {repositories.map((repository) => {
           const isSelected = selectedRepoIds.has(repository.id);
+          const isSelectionDisabled = !isSelected && hasReachedSelectionLimit;
 
           return (
             <Card
@@ -207,11 +215,16 @@ export function RepoSelectionList({
                     </Button>
                     <Button
                       aria-pressed={isSelected}
+                      disabled={isSelectionDisabled}
                       onClick={() => toggleRepository(repository.id)}
                       type="button"
                       variant={isSelected ? "secondary" : "default"}
                     >
-                      {isSelected ? "Remove" : "Select repo"}
+                      {isSelected
+                        ? "Remove"
+                        : isSelectionDisabled
+                          ? "Limit reached"
+                          : "Select repo"}
                     </Button>
                   </div>
                 </div>
@@ -231,7 +244,8 @@ export function RepoSelectionList({
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Selecting a repo only adds it to this list. Use this button when
-              you are ready to start generation.
+              you are ready to start generation. Max{" "}
+              {maxSelectedRepositories} repos.
             </p>
           </div>
           <Button
