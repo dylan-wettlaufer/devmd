@@ -118,7 +118,7 @@ export function ExperienceForm() {
         throw new Error(responseBody.error ?? "Could not queue experience generation.");
       }
 
-      router.push("/dashboard");
+      router.push("/onboarding/review");
       router.refresh();
     } catch (submitError) {
       setError(
@@ -242,7 +242,7 @@ export function ExperienceForm() {
                 </>
               ) : (
                 <>
-                  Finish onboarding
+                  Review generated files
                   <ArrowRight data-icon="inline-end" />
                 </>
               )}

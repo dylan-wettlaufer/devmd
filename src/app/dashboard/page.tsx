@@ -11,6 +11,16 @@ import {
 } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function getProfileStatus(value: unknown) {
+  if (typeof value !== "object" || value === null || !("profile_status" in value)) {
+    return "draft";
+  }
+
+  const profileStatus = value.profile_status;
+
+  return typeof profileStatus === "string" ? profileStatus : "draft";
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -19,6 +29,17 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/auth/sign-in?next=/dashboard");
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("profile_status")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profileStatus = getProfileStatus(profile);
+
+  if (profileStatus !== "activated" && profileStatus !== "connected") {
+    redirect("/onboarding/review");
   }
 
   return (
@@ -31,8 +52,8 @@ export default async function DashboardPage() {
               DevMD workspace
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              GitHub OAuth is connected. Next, this workspace will guide repo
-              selection, project context, profile generation, and activation.
+              Your profile is activated. Manage your Markdown profile, exports,
+              and connected tools from this workspace.
             </p>
           </div>
           <form action="/auth/sign-out" method="post">
@@ -44,9 +65,9 @@ export default async function DashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ["Repository selection", "Choose public GitHub repos for Project Brain generation."],
-            ["Profile documents", "Edit background.md, experience.md, and project Markdown."],
-            ["Activation", "Unlock export and read-only MCP once profile requirements are met."],
+            ["Profile documents", "Review and maintain background.md, experience.md, and project Markdown."],
+            ["Export", "Download Markdown, copy sections, or prepare a public profile link."],
+            ["Connected tools", "Connect AI tools once read-only MCP access is available."],
           ].map(([title, description]) => (
             <Card key={title}>
               <CardHeader>
@@ -61,12 +82,15 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Current session</CardTitle>
             <CardDescription>
-              Supabase Auth user details available to server components.
+              Supabase Auth user and profile lifecycle details.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="font-mono text-sm text-muted-foreground">
               {user.email ?? user.id}
+            </p>
+            <p className="mt-2 font-mono text-sm text-muted-foreground">
+              profile_status: {profileStatus}
             </p>
           </CardContent>
         </Card>
