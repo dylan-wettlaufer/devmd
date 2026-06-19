@@ -3,9 +3,14 @@ import os from "node:os";
 import { loadEnvConfig } from "@next/env";
 import { z } from "zod";
 
+import {
+  backgroundAnswersSchema,
+  generateBackground,
+} from "@/lib/generation/background";
 import { analyzePublicGithubRepository } from "@/lib/github/analyze-repo";
 import {
   claimNextGenerationJob,
+  createBackgroundVersion,
   completeGenerationJob,
   createProjectVersion,
   failGenerationJob,
@@ -13,6 +18,7 @@ import {
   type GenerationJob,
 } from "@/lib/generation/jobs";
 import { generateProjectBrain } from "@/lib/generation/project-brain";
+import { renderBackgroundMarkdown } from "@/lib/generation/render-background-markdown";
 import { renderProjectMarkdown } from "@/lib/generation/render-project-markdown";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -25,6 +31,9 @@ type ProjectRow = {
 
 const projectBrainJobInputSchema = z.object({
   repositoryUrl: z.string().url().optional(),
+});
+const backgroundJobInputSchema = z.object({
+  answers: backgroundAnswersSchema,
 });
 
 const pollIntervalMs = 5_000;
@@ -101,12 +110,39 @@ async function processProjectBrainJob(job: GenerationJob) {
   await markProjectStatus(supabase, project.id, "completed");
 }
 
+async function processBackgroundJob(job: GenerationJob) {
+  const supabase = createSupabaseAdminClient();
+  const input = backgroundJobInputSchema.parse(job.input);
+  const background = await generateBackground(input.answers);
+  const markdown = renderBackgroundMarkdown(background);
+
+  await createBackgroundVersion(supabase, {
+    userId: job.user_id,
+    markdown,
+    metadata: {
+      generator: "gemini",
+      answers: input.answers,
+    },
+  });
+
+  await completeGenerationJob(supabase, job.id, {
+    section: "background",
+    markdownLength: markdown.length,
+  });
+}
+
 async function processGenerationJob(job: GenerationJob) {
-  if (job.job_type !== "project_brain" && job.job_type !== "manual_refresh") {
-    throw new Error(`Unsupported generation job type: ${job.job_type}.`);
+  if (job.job_type === "background") {
+    await processBackgroundJob(job);
+    return;
   }
 
-  await processProjectBrainJob(job);
+  if (job.job_type === "project_brain" || job.job_type === "manual_refresh") {
+    await processProjectBrainJob(job);
+    return;
+  }
+
+  throw new Error(`Unsupported generation job type: ${job.job_type}.`);
 }
 
 async function runWorkerLoop() {

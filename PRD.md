@@ -53,7 +53,6 @@ These documents form a canonical profile that:
 ## Project Generation
 
 - Async Project Brain generation per repository
-- 2–3 contextual questions per project
 - Editable project documents
 - Manual refresh from GitHub
 
@@ -62,6 +61,9 @@ These documents form a canonical profile that:
 Guided AI Q&A to generate:
 
 - `background.md`
+
+User uploads resume or adds experince maually to generate:
+
 - `experience.md`
 
 ## Profile Activation
@@ -127,16 +129,11 @@ Read-only remote MCP server with:
 
 1. Sign in with GitHub.
 2. Select repositories.
-3. Answer 2–3 contextual questions per project.
-4. Background jobs generate Project Brains.
-5. Review and edit generated project documents.
-6. Complete guided Q&A for:
-
-   - background
-   - experience
-
-7. Review assembled profile.
-8. Activate profile.
+3. Background jobs generate Project Brains.
+4. Answer Q&A for background.md
+5. Upload resume or manually add experince for expereince.md
+6. Review and edit generated documents.
+7. Activate profile.
 
 ---
 
@@ -253,9 +250,11 @@ How to explain the project verbally.
 
 ## 8.4 Background and Experience
 
-Guided AI conversations generate:
+Guided AI conversation generate:
 
 - `background.md`
+
+Uplaoded resume generates:
 - `experience.md`
 
 Both remain fully editable.

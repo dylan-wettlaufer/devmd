@@ -108,7 +108,7 @@ export function RepoSelectionList({
         throw new Error(body.error ?? "Could not queue selected repositories.");
       }
 
-      router.push("/dashboard");
+      router.push("/onboarding/background");
       router.refresh();
     } catch (error) {
       setSubmitError(

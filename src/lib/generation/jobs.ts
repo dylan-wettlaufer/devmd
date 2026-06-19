@@ -44,6 +44,12 @@ export type ProjectVersionInput = {
   sourceCommitSha: string | null;
 };
 
+export type BackgroundVersionInput = {
+  userId: string;
+  markdown: string;
+  metadata: Json;
+};
+
 function isGenerationJob(value: unknown): value is GenerationJob {
   return (
     typeof value === "object" &&
@@ -116,6 +122,41 @@ export async function createProjectVersion(
     metadata: input.metadata,
     source_commit_sha: input.sourceCommitSha,
     status: "generated",
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function createBackgroundVersion(
+  supabase: SupabaseClient,
+  input: BackgroundVersionInput
+) {
+  const { data: latestVersion, error: latestVersionError } = await supabase
+    .from("background")
+    .select("version_number")
+    .eq("user_id", input.userId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestVersionError) {
+    throw latestVersionError;
+  }
+
+  const currentVersionNumber =
+    typeof latestVersion?.version_number === "number"
+      ? latestVersion.version_number
+      : 0;
+
+  const { error } = await supabase.from("background").insert({
+    user_id: input.userId,
+    version_number: currentVersionNumber + 1,
+    markdown: input.markdown,
+    metadata: input.metadata,
+    status: "generated",
+    updated_at: new Date().toISOString(),
   });
 
   if (error) {
