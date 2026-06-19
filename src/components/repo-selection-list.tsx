@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   Check,
@@ -42,7 +43,9 @@ function getRepoCountLabel(count: number) {
 }
 
 function getContinueLabel(count: number) {
-  return count === 1 ? "Continue with 1 repo" : `Continue with ${count} repos`;
+  return count === 1
+    ? "Start AI generation for 1 repo"
+    : `Start AI generation for ${count} repos`;
 }
 
 export function RepoSelectionList({
@@ -50,22 +53,16 @@ export function RepoSelectionList({
 }: {
   repositories: GithubRepositorySummary[];
 }) {
+  const router = useRouter();
   const [selectedRepoIds, setSelectedRepoIds] = useState<Set<number>>(
     () => new Set()
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const selectedRepositories = useMemo(
     () => repositories.filter((repository) => selectedRepoIds.has(repository.id)),
     [repositories, selectedRepoIds]
   );
-  const continueHref = useMemo(() => {
-    const params = new URLSearchParams();
-
-    selectedRepositories.forEach((repository) => {
-      params.append("repo", repository.url);
-    });
-
-    return `/dashboard?${params.toString()}`;
-  }, [selectedRepositories]);
 
   function toggleRepository(repositoryId: number) {
     setSelectedRepoIds((currentRepoIds) => {
@@ -79,6 +76,43 @@ export function RepoSelectionList({
 
       return nextRepoIds;
     });
+  }
+
+  async function queueSelectedRepositories() {
+    if (selectedRepositories.length === 0) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const response = await fetch("/api/projects/select", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          repositories: selectedRepositories,
+        }),
+      });
+      const body = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(body.error ?? "Could not queue selected repositories.");
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Could not queue selected repositories."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -96,13 +130,11 @@ export function RepoSelectionList({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">Public, owned, active</Badge>
-          {selectedRepositories.length > 0 ? (
-            <Button asChild>
-              <a href={continueHref}>{getContinueLabel(selectedRepositories.length)}</a>
-            </Button>
-          ) : null}
         </div>
       </div>
+      {submitError ? (
+        <p className="text-sm text-destructive">{submitError}</p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {repositories.map((repository) => {
@@ -187,6 +219,33 @@ export function RepoSelectionList({
             </Card>
           );
         })}
+      </div>
+
+      <div className="sticky bottom-4 z-10 rounded-lg border border-border bg-background/95 p-4 backdrop-blur">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">
+              {selectedRepositories.length > 0
+                ? getRepoCountLabel(selectedRepositories.length)
+                : "Select one or more repositories"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Selecting a repo only adds it to this list. Use this button when
+              you are ready to start generation.
+            </p>
+          </div>
+          <Button
+            disabled={selectedRepositories.length === 0 || isSubmitting}
+            onClick={queueSelectedRepositories}
+            type="button"
+          >
+            {isSubmitting
+              ? "Starting generation"
+              : selectedRepositories.length > 0
+                ? getContinueLabel(selectedRepositories.length)
+                : "Select repos first"}
+          </Button>
+        </div>
       </div>
     </>
   );
