@@ -125,7 +125,7 @@ export function BackgroundQuestionsForm() {
         throw new Error(responseBody.error ?? "Could not queue background generation.");
       }
 
-      router.push("/dashboard");
+      router.push("/onboarding/experience");
       router.refresh();
     } catch (submitError) {
       setError(

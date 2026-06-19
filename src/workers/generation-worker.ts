@@ -7,11 +7,16 @@ import {
   backgroundAnswersSchema,
   generateBackground,
 } from "@/lib/generation/background";
+import {
+  experienceInputSchema,
+  generateExperience,
+} from "@/lib/generation/experience";
 import { analyzePublicGithubRepository } from "@/lib/github/analyze-repo";
 import {
   claimNextGenerationJob,
   createBackgroundVersion,
   completeGenerationJob,
+  createExperienceVersion,
   createProjectVersion,
   failGenerationJob,
   markProjectStatus,
@@ -19,6 +24,7 @@ import {
 } from "@/lib/generation/jobs";
 import { generateProjectBrain } from "@/lib/generation/project-brain";
 import { renderBackgroundMarkdown } from "@/lib/generation/render-background-markdown";
+import { renderExperienceMarkdown } from "@/lib/generation/render-experience-markdown";
 import { renderProjectMarkdown } from "@/lib/generation/render-project-markdown";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -34,6 +40,9 @@ const projectBrainJobInputSchema = z.object({
 });
 const backgroundJobInputSchema = z.object({
   answers: backgroundAnswersSchema,
+});
+const experienceJobInputSchema = z.object({
+  experienceInput: experienceInputSchema,
 });
 
 const pollIntervalMs = 5_000;
@@ -131,9 +140,39 @@ async function processBackgroundJob(job: GenerationJob) {
   });
 }
 
+async function processExperienceJob(job: GenerationJob) {
+  const supabase = createSupabaseAdminClient();
+  const input = experienceJobInputSchema.parse(job.input);
+  const experience = await generateExperience(input.experienceInput);
+  const markdown = renderExperienceMarkdown(experience);
+
+  await createExperienceVersion(supabase, {
+    userId: job.user_id,
+    markdown,
+    metadata: {
+      generator: "gemini",
+      sourceType: input.experienceInput.sourceType,
+      source:
+        input.experienceInput.sourceType === "resume"
+          ? { fileName: input.experienceInput.fileName }
+          : "manual",
+    },
+  });
+
+  await completeGenerationJob(supabase, job.id, {
+    section: "experience",
+    markdownLength: markdown.length,
+  });
+}
+
 async function processGenerationJob(job: GenerationJob) {
   if (job.job_type === "background") {
     await processBackgroundJob(job);
+    return;
+  }
+
+  if (job.job_type === "experience") {
+    await processExperienceJob(job);
     return;
   }
 
